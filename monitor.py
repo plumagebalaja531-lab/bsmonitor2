@@ -4,7 +4,6 @@ import re
 import urllib.request
 
 URLS = [
-    "https://daesung.bstage.in/shop/products/49",
     "https://daesung.bstage.in/shop/products/59",
     "https://daesung.bstage.in/shop/products/60",
     "https://daesung.bstage.in/shop/products/61",
@@ -14,30 +13,39 @@ URLS = [
 ]
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+RAW_CHAT_IDS = os.environ.get("TELEGRAM_CHAT_ID", "")
 STATE_FILE = "state.json"
 
 
+def parse_chat_ids(raw_ids: str) -> list[str]:
+    return [cid.strip() for cid in raw_ids.split(",") if cid.strip()]
+
+
 def send_telegram(message: str) -> None:
-    if not BOT_TOKEN or not CHAT_ID:
+    chat_ids = parse_chat_ids(RAW_CHAT_IDS)
+    if not BOT_TOKEN or not chat_ids:
         print("尚未設定 TELEGRAM_BOT_TOKEN 或 TELEGRAM_CHAT_ID，略過推播。")
         return
 
     api_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = json.dumps({
-        "chat_id": CHAT_ID,
-        "text": message,
-        "disable_web_page_preview": False,
-    }).encode("utf-8")
+    for chat_id in chat_ids:
+        payload = json.dumps({
+            "chat_id": chat_id,
+            "text": message,
+            "disable_web_page_preview": False,
+        }).encode("utf-8")
 
-    req = urllib.request.Request(
-        api_url,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        print("Telegram 推播狀態碼:", resp.status)
+        req = urllib.request.Request(
+            api_url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                print(f"Telegram 推播至 {chat_id} 狀態碼:", resp.status)
+        except Exception as e:
+            print(f"Telegram 推播至 {chat_id} 失敗: {e}")
 
 
 def fetch_out_of_stock(url: str) -> bool | None:
