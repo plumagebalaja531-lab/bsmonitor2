@@ -1,0 +1,40 @@
+name: Bstage Product Monitor v2
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: bstage-stock-monitor-v2
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  check-stock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下載儲存庫程式碼
+        uses: actions/checkout@v4
+
+      - name: 安裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 執行庫存檢查腳本
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python monitor.py
+
+      - name: 儲存最新狀態回寫儲存庫
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          if ! git diff --staged --quiet; then
+            git commit -m "Update stock status"
+            git pull --rebase --autostash origin main
+            git push
+          fi
