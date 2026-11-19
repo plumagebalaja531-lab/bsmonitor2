@@ -4,6 +4,7 @@ import re
 import urllib.request
 
 URLS = [
+    "https://daesung.bstage.in/shop/products/49",
     "https://daesung.bstage.in/shop/products/59",
     "https://daesung.bstage.in/shop/products/60",
     "https://daesung.bstage.in/shop/products/61",
